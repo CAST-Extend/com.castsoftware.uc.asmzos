@@ -4,15 +4,12 @@ The Extension should be used for Mainframe COBOL and Assembler language. The ext
 The Extension implements customer metrics using CAST Universal Analyzer.
 # 1.1	Version
  The table below indicates the current version of the Extension and history of versions.
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG001.PNG?raw=true)
 
 # 1.2	Use cases
 The Extension is covering the following use cases: 
 •	Link Call from ASM Program to ASM Program or Cobol Program
-Technology Involved	Techno type 	Quality 
-•	ASSEMBLER
-•	COBOL	Legacy	  
- 
-
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG002.PNG?raw=true)
  
 # 2	Compatibility
 # 2.1	CAST AIP compatibility
