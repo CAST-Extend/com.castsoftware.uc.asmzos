@@ -14,8 +14,7 @@ The Extension is covering the following use cases:
 # 2	Compatibility
 # 2.1	CAST AIP compatibility
 The following table gives the list of CAST AIP configurations where the Extension has been implemented: 
-CAST AIP release 	Has previously worked 	In Version of Extension
-8.3.5	 	Current
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG003.PNG?raw=true)
 # 2.2	Other technology compatibility
 The Extension has been implemented in standard CAST AIP installation and platform, without other products or components using Universal Analyzer Framework.
 # 2.3	Recent implementation
@@ -29,8 +28,8 @@ An installation of any compatible release of CAST AIP (see table above)
 # 3.2	Installation instructions
 # 3.2.1	Download the extension from CAST Extension Downloader 
 The CAST Extension Downloader is provided along with the CAST Installation
- 
 
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG004.PNG?raw=true)
  
 # 3.2.2	Install the Extension 
 Before to install the Extension, you have to create and customize it as showed into CAST Software Documentation "Cookbooks Working with CAST AIP Extensions".
@@ -40,7 +39,7 @@ After customization the Extension installation is available directly from CAST S
 •	Select the Extension to install it on schema
 •	Click to proceed to install
  
- 
+ ![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG005.PNG?raw=true)
 
 
 # 4	How to use
@@ -48,26 +47,28 @@ After customization the Extension installation is available directly from CAST S
 The extension has been implemented with a pre-proces step for Assembler Source code Programs and the custom dependencies using Refine Target to Cobol Program and Reference Pattern to crate the link ASM Programs to ASM or COB Programs. 
 # 4.2	Extension of technologies cover for UA
 The Extension is extending technology coverage for CAST operations as below specified. 
-Code Type	Required Extension	Mandatory/Optional	Comments
-Assembler	*.asm
-*.ASM	Mandatory	Assembler source code
-Cobol	*.CBL
-*.COB	Optional	Cobol source code 
+
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG006.PNG?raw=true)
+
+
 # 4.3	Pre-proces (launch.bat)
 The  pre-process is a batch (launch.bat) defined in prepro extension subfolder for example like  “C:\ProgramData\CAST\CAST\Extensions\com.castsoftware.uc.asmzos.1.0.0\Configuration\Languages\ASMZOS”. 
 
- 
+ ![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG007.PNG?raw=true)
+
 
 The batch uses as input information the application Deploy folder, LISA folder and LOGS folder. It copy the ASM source code files in LISA folder inserting at the top of source code the tag “BEGIN_PROGRAM(program name)” and at the both the tag “END_PROGRAM”. 
 These two tags are used to define to UA the boby of source code parsed by UA ASMZOS Extension. 
 
 This is the program before the tags.
 
- 
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG008.PNG?raw=true)
+
 
 This is the program after the tags.
 
-  
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG009.PNG?raw=true)
+
 
 The batch creates a log file (with final suffix LOG_PREPROCES) in log root directory like this “AU_ASM_60598-20180926-18321_LOG_PREPROCES.TXT”.
 # 4.4	Refine pattern and reference pattern
@@ -76,14 +77,19 @@ o	Define custom dependencies Source / Target
 o	Define Target Refine  & Define Reference Pattern 
 # 4.5	Define dependencies with Refine pattern
 Create custom dependencies Source as Universal (UA Assembler) and Target as Mainframe. 
- 
+ ![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG010.PNG?raw=true)
+
 Define Refine Target for Mainframe filter Analysis Unit Mainframe and Object Type Cobol Program and Nested Cobol Program 
- 
+ ![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG011.PNG?raw=true)
+
  
 # 5	What the results expected
 Once the analysis has completed the following objects will be displayed in CAST Enlighten.
 o	Object Name : FS1I2007
 o	Object Type : ASMZOS Program
+
+![]( https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/blob/master/IMG012.PNG?raw=true)
+
  
 # 5.1	Analysis strategy
 The Cast AI Administrator needs to know the technologies and the languages involved to customize the metrics and the extensions. 
