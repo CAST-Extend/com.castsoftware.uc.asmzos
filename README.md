@@ -5,3 +5,17 @@ The Extension should be used for Mainframe COBOL and Assembler language. The ext
 The Extension implements customer metrics using CAST Universal Analyzer.
 
 See wiki for complete description
+
+
+code-scanner-config.xml
+
+<discoverer extensionId="com.castsoftware.uc.asmzos" dmtId="asmzosfilediscoverer"
+                    fileExtensions=".asm;.ASM;.mlc;.MLC;.asmacro;.ASMACRO;" label="ASMZOS"/>
+
+dependencies-matrix.xml
+
+    <technology symbol="ASMZOS" type="language">
+        <allow symbol="SQL"/>
+    </technology>
+    
+
