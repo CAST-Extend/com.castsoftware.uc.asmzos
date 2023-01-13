@@ -9,7 +9,7 @@ See wiki for complete description
 
 code-scanner-config.xml
 
-<discoverer extensionId="com.castsoftware.uc.asmzos" dmtId="asmzosfilediscoverer"
+                  <discoverer extensionId="com.castsoftware.uc.asmzos" dmtId="asmzosfilediscoverer"
                     fileExtensions=".asm;.ASM;.mlc;.MLC;.asmacro;.ASMACRO;" label="ASMZOS"/>
 
 dependencies-matrix.xml
