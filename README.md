@@ -21,16 +21,23 @@ Code-scanner-config.xml
 
 dependencies-matrix.xml
 
-   <technology symbol="ASMZOS" type="language">
+	<technology symbol="Mainframe Control Parms" type="language">
+        <allow symbol="SQL"/>
+    </technology>
+    <technology symbol="Assembler" type="language">
+        <allow symbol="SQL"/>
+    </technology>
+    <technology symbol="Rexx Language" type="language">
+        <allow symbol="SQL"/>
+    </technology> 
+    <technology symbol="Easytrieve Plus Language" type="language">
+        <allow symbol="SQL"/>
+    </technology>
+    <technology symbol="FOCUS Language" type="language">
         <allow symbol="SQL"/>
     </technology>
 
-    <technology symbol="CTL" type="language">
+    <technology symbol="BaseSAS" type="language">
         <allow symbol="SQL"/>
     </technology>
-
-    <technology symbol="Easy" type="language">
-        <allow symbol="SQL"/>
-    </technology>
-
 
