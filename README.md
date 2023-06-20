@@ -11,12 +11,18 @@ Changes needs to be done in console configuration files.
 
 Code-scanner-config.xml
 
-        <discoverer extensionId="com.castsoftware.uc.asmzos" dmtId="asmzosfilediscoverer"
-                    fileExtensions=".asm;.ASM;.mlc;.MLC;.asmacro;.ASMACRO;" label="ASMZOS"/>
-        <discoverer extensionId="com.castsoftware.uc.easytrieve" dmtId="esyzosfilediscoverer"
-                    fileExtensions=".ESY;.MAC;.esy;.mac" label="Easy"/>
-        <discoverer extensionId="com.castsoftware.labs.ctl.link" dmtId="ctlzosfilediscoverer"
-                    fileExtensions=".CTL;.ctl;.ndm;.NDM;" label="CTL"/>
+	<discoverer extensionId="com.castsoftware.uc.asmzos" dmtId="asmzosfilediscoverer"
+                fileExtensions=".asm;.ASM;.mlc;.MLC;.asmacro;.ASMACRO;" label="ASM zOS Files"/>
+    <discoverer extensionId="com.castsoftware.labs.ctl.link" dmtId="ctlzosfilediscoverer"
+                fileExtensions=".CTL;.ctl;.ndm;.NDM;" label="CTL zOS Files"/>
+    <discoverer extensionId="com.castsoftware.labs.rexx" dmtId="rexxzosfilediscoverer"
+                fileExtensions=".REXX;.rexx;" label="REXX zOS Files"/>    
+    <discoverer extensionId="com.castsoftware.labs.focus" dmtId="focuszosfilediscoverer"
+                fileExtensions=".FEX;.MAS;.FOC;.fex;.mas;.foc;" label="focus zOS Files"/>    
+    <discoverer extensionId="com.castsoftware.uc.easytrieve" dmtId="esyzosfilediscoverer"
+                fileExtensions=".ESY;.MAC;.esy;.mac;" label="ESY zOS Files"/>    
+    <discoverer extensionId="com.castsoftware.labs.zos.basesas" dmtId="saszosfilediscoverer"
+                fileExtensions=".sas;.SAS;" label="SAS zOS Files"/> 
 
 
 dependencies-matrix.xml
