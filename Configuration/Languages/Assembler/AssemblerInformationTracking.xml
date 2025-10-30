@@ -1,0 +1,13 @@
+<InformationTracking id="Assembler">
+ <searchLinksInString>false</searchLinksInString>
+ <sourceFileLinkSearchDeactivation>
+  <caller>
+   <genericLinks/>
+   <link>useLink</link>
+  </caller>
+  <callee>
+   <genericLinks/>
+   <link>useLink</link>
+  </callee>
+ </sourceFileLinkSearchDeactivation>
+</InformationTracking>

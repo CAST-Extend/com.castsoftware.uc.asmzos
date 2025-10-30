@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="iso-8859-1" ?>
+<metaModel file_level="client" file_no="43">
+<!-- Version: 1.0.0 -->
+<!-- Categories --> 
+  <category name="APM ASMZOS Module" rid="2043000">
+    <description>Assembler</description>
+    <inheritedCategory name="APM Client Modules"/>
+  </category>
+  <category name="APM ASMZOS Artifacts" rid="2043001">
+    <description>ASMZOS Artifacts</description>
+    <inheritedCategory name="APM Client Language Artifacts"/>
+  </category>
+  <category name="Assembler" rid="2043002">
+    <description>Assembler</description>
+    <attribute name="extensions" stringValue="*.asm;*.ASM;*.mlc;*.MLC;*.asmacro;*.ASMACRO;"/>
+    <inheritedCategory name="UniversalLanguage"/>
+    <inheritedCategory name="CsvLanguage"/>
+  </category>
+  <type name="ASMZOSProject" rid="2043003">
+    <description>ASMZOS Project</description>
+    <inheritedCategory name="Assembler"/>
+    <inheritedCategory name="APM ASMZOS Module"/>
+    <inheritedCategory name="UAProject"/>
+ </type>
+  <type name="ASMZOS_SUBSET" rid="2043099">
+    <description>ASMZOS Subset</description>
+    <inheritedCategory name="Assembler"/>
+    <inheritedCategory name="APM ASMZOS Module"/>
+    <inheritedCategory name="PROJECT_SUBSET"/>
+  </type>
+  <type name="EnlightenASMZOS" rid="2043004">
+    <description>ASMZOS</description>
+    <tree parent="EnlightenUniversalObjects" category="EnlightenTree"/>
+  </type>
+	
+	<type name="ASMZOSProgram" rid="2043005">
+		<description>Assembler Program</description>
+		<inheritedCategory name="Assembler"/>
+		<inheritedCategory name="UAObject"/>
+        <inheritedCategory name="CAST_SQL_MetricableQuery" />
+		<inheritedCategory name="APM ASMZOS Artifacts"/>
+		<inheritedCategory name="identification"/>
+		<inheritedCategory name="persistent"/>
+		<inheritedCategory name="bookmark"/>
+		<inheritedCategory name="POSITIONABLE"/>
+		<inheritedCategory name="metric"/>
+		<inheritedCategory name="METRICABLE"/>
+		<inheritedCategory name="EnlightenBrowsable"/>
+		<inheritedCategory name="EnlightenGraphable"/>
+		<inheritedCategory name="WithEnlightenProperties"/>
+		<inheritedCategory name="ESCALATION_ALL"/>
+		<inheritedCategory name="caseInsensitive"/>
+		<inheritedCategory name="CastSystemViews"/>	
+		<tree parent="useSelectLink" category="CallerLinkable"/>
+		<tree parent="useUpdateLink" category="CallerLinkable"/>
+		<tree parent="useInsertLink" category="CallerLinkable"/>
+		<tree parent="useDeleteLink" category="CallerLinkable"/>
+		<tree parent="sourceFile" category="amtParentship"/>
+		<tree parent="EnlightenASMZOS" category="EnlightenTree"/>
+	</type>
+	
+    <type name="CallTo_program" rid="2043006">
+        <description>Assembler Call to Generic Program</description>
+		<inheritedCategory name="UAObject" />
+        <inheritedCategory name="METRICABLE" />
+        <inheritedCategory name="Assembler" />
+		<inheritedCategory name="APM ASMZOS Artifacts"/>
+        <tree parent="EnlightenASMZOS" category="EnlightenTree" />
+		<tree parent="matchLink" category="CallerLinkable"/>
+        <tree parent="ASMZOSProgram" category="amtParentship"/>
+    </type>	
+
+    <type name="ASM_MACRO" rid="2043007">
+        <description>Assembler Macro</description>
+        <inheritedCategory name="CAST_SQL_MetricableQuery" />
+		<inheritedCategory name="UAObject" />
+        <inheritedCategory name="METRICABLE" />
+        <inheritedCategory name="Assembler" />
+		<tree parent="useSelectLink" category="CallerLinkable"/>
+		<tree parent="useUpdateLink" category="CallerLinkable"/>
+		<tree parent="useInsertLink" category="CallerLinkable"/>
+		<tree parent="useDeleteLink" category="CallerLinkable"/>
+		<inheritedCategory name="APM ASMZOS Artifacts"/>
+		<tree parent="sourceFile" category="amtParentship"/>
+		<tree parent="EnlightenASMZOS" category="EnlightenTree"/>
+    </type>	
+	
+</metaModel>

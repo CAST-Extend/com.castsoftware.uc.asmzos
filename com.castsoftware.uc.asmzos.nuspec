@@ -1,0 +1,22 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
+  <metadata>
+    <id>com.castsoftware.uc.asmzos</id>
+    <version>1.1.27</version>
+    <title>Technology Extension for Assembler ZOS</title>
+    <authors>CAST User Community</authors>
+    <owners>CAST</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <licenseUrl>https://extend.castsoftware.com/V2/Licenses/Cast-Licence-UserCommunity-1.0.html</licenseUrl>
+    <projectUrl>https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/wiki</projectUrl>
+    <iconUrl>https://raw.githubusercontent.com/CAST-Extend/resources/master/com.castsoftware.sqlanalyzer.png</iconUrl>
+    <description>This extension can be installed to enable the import of ASM zos files. Function Point counting is not supported. Sizing and Quality are not supported. The extension is based on the CAST Universal Analyzer.</description>
+    <releaseNotes>https://github.com/CAST-Extend/com.castsoftware.uc.asmzos/wiki#111change-log</releaseNotes>
+    <tags>Platform:All CASTUserCommunity CAIP8.3 CAIP8.3.x ASM Assembler ZOS os390 ibm techno:mainframe</tags>
+    <dependencies>
+      <dependency id="CAIP" version="8.3.0" />
+      <dependency id="com.castsoftware.labs.cobol.swcopy.update" version="1.0.13" />
+      <dependency id="com.castsoftware.dmtgenericfilediscoverer" version="1.0.6" />
+    </dependencies>
+  </metadata>
+</package>

@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+
+<languagePattern id="Assembler">
+
+	<!--esql>
+	<begin><![CDATA[BEGIN_PROGRAM]]></begin>
+		<end><![CDATA[END_PROGRAM]]></end>
+	</esql-->
+
+	<!--esql>
+	<begin><![CDATA[BEGIN_MACRO]]></begin>
+		<end><![CDATA[END_MACRO]]></end>
+	</esql-->
+	
+	<types>
+		<!--ASMZOSProgram>
+			<header>
+				<pattern><![CDATA[BEGIN_PROGRAM[(]]]></pattern>
+			</header>
+			<identification.name>	
+				<pattern><![CDATA[BEGIN_PROGRAM[(]]]></pattern>
+				<value><![CDATA[.*?(?:(?=\)))]]></value>
+			</identification.name>
+			<body>
+				<begin><![CDATA[[)]]]></begin>
+				<end><![CDATA[END_PROGRAM]]></end>
+				<nested>false</nested>
+			</body>
+		</ASMZOSProgram!-->
+		<!--CallTo_program>
+			<header>
+				<pattern><![CDATA[[ \t]+((CALL[ \t]+)+|PROGRAM\(\')]]></pattern>
+			</header>
+			<identification.name>	
+				<pattern><![CDATA[[ \t]+((CALL[ \t]+)+|PROGRAM\(\')]]]></pattern>
+				<value><![CDATA[[\w-]+]]></value>
+			</identification.name>
+		</CallTo_program!-->
+	</types>
+    
+
+    <!--links>
+        <callLink>
+            <pattern><![CDATA[[[:blank:]]+[cC][aA][lL][lL][[:blank:]]+]]></pattern>
+            <callee><![CDATA[[\w-]+]]></callee>
+        </callLink>
+    </links--> 
+    <!--links>
+        <callLink>
+            <pattern><![CDATA[[[:blank:]]+[Pp][Rr][Oo][Gg][Rr][Aa][Mm]\(\']]></pattern>
+            <callee><![CDATA[]]></callee>
+        </callLink>
+    </links--> 
+</languagePattern>
