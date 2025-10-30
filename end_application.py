@@ -25,7 +25,7 @@ class endapp(ApplicationLevelExtension):
         pli_list = []
         call_to_programs_list = defaultdict(list)
         self.links = []
-        asm_list = []
+        asm_list = defaultdict(list)
         asm_macro_list = defaultdict(list)
         self.links = []
 
@@ -45,7 +45,7 @@ class endapp(ApplicationLevelExtension):
 
         for asm_pgm in application.objects().has_type('ASMZOSProgram'):
             #logging.debug ("ASMZOSProgram found: {}".format(asm_pgm.get_name()))
-            asm_list.append(asm_pgm)
+            asm_list[asm_pgm.get_name()].append(asm_pgm)
         logging.info("****** Number of ASMZOSProgram {}".format(str(len(asm_list))))
         
         ## Assembler to Cobol Calls.         
@@ -107,21 +107,21 @@ class endapp(ApplicationLevelExtension):
                         link = ('matchLink', call_to_pgm_obj,pli_pgm)
                         self.links.append(link)
                 
-                for asm_pgm in asm_list:
-                    if asm_pgm.get_name() == call_to_pgm:
-                        # we have a match
-                        link = ('matchLink', call_to_pgm_obj,asm_pgm)
-                        self.links.append(link)
+                for asm_pgm in asm_list[call_to_pgm]:
+                    # we have a match
+                    link = ('matchLink', call_to_pgm_obj,asm_pgm)
+                    self.links.append(link)
                 
-                    
+
          # matching by name : if CAST_COBOL_ProgramPrototype has same name as Assembler Program, they are the same object
         nbLinkCreated = 0
-        for asm_pgm in asm_list:
-            for cobol_unknown in cobol_unknown_list:
-                if cobol_unknown.get_name() == asm_pgm.get_name():
-                    # we have a match
-                    link = ('matchLink', cobol_unknown, asm_pgm)
-                    self.links.append(link)
+        for asm_l in asm_list.values():
+            for asm_pgm in asm_l:
+                for cobol_unknown in cobol_unknown_list:
+                    if cobol_unknown.get_name() == asm_pgm.get_name():
+                        # we have a match
+                        link = ('matchLink', cobol_unknown, asm_pgm)
+                        self.links.append(link)
 
                    
         for link in self.links:
@@ -135,7 +135,7 @@ class endapp(ApplicationLevelExtension):
         
         for asm_macro in application.objects().has_type('ASM_MACRO'):
             #logging.debug ("ASM_MACRO found: {}".format(asm_macro.get_name()))
-            asm_macro_list[asm_macro.get_name()].append(asm_macro)
+            asm_macro_list[asm_macro.get_name().strip()].append(asm_macro)
             
         logging.info("****** Number of ASM Macro {}".format(str(len(asm_macro_list))))
         
@@ -145,17 +145,18 @@ class endapp(ApplicationLevelExtension):
         self.lineNb = 0
         
         ## Scan through all the Assembler Programs and find the reference of Assembler Macro
-
+        nb_links_to_ast_and_mlc = 0
         for asm in application.get_files(['sourceFile']):
             # check if file is analyzed source code, or if it generated (Unknown)
             #logging.info("CTL is " + str(CTL))
             program_name = ""
+
             if not asm.get_path():
                 continue
-            
+
             if not (asm.get_path().lower().endswith('.asm')) and not (asm.get_path().lower().endswith('.mlc')):
                 continue
-            
+
             self.lineNb = 0
 
             macro_access = ReferenceFinder()
@@ -164,19 +165,18 @@ class endapp(ApplicationLevelExtension):
      
             references = []
             references += [reference for reference in macro_access.find_references_in_file(asm)]
-            
+            logging.info("coucou debug nb_references: " + str(len(references)) + " for asm file" + asm.get_path())
             for reference in references:
                 asm_macro_name = reference.value.strip()
                 if len(asm_macro_name.split()) >= 2:
                     asm_macro_name = asm_macro_name.split()[1]
 
-                for key, value in asm_macro_list.items():
-                    macroName = key
-                    macroObjs = value
-                    if macroName.strip() == asm_macro_name.strip():
-                        for macroObj in macroObjs:
-                            self.links.append(('callLink', reference.object, macroObj, reference.bookmark))
-        
+                for macroObjs in asm_macro_list[asm_macro_name.strip()]:
+                    for macroObj in macroObjs:
+                        nb_links_to_ast_and_mlc+=1
+                        self.links.append(('callLink', reference.object, macroObj, reference.bookmark))
+
+        logging.info("****** Number of links from .asm and .mlc files: ".format(str(nb_links_to_ast_and_mlc)))
 
         for o in application.objects().has_type('CAST_COBOL_Program'):
   
@@ -184,10 +184,10 @@ class endapp(ApplicationLevelExtension):
             # check if file is analyzed source code, or if it generated (Unknown)
             if not o.get_path():
                 continue
-            
+
             references = []
             references += [reference for reference in cics_load_access.find_references_in_file(o)]
-
+            logging.info("coucou debug nb_references: " + str(len(references)) + " for current program " + o.get_path())
             #logging.info("references is " + str(references))
             for reference in references:
                 if  reference.pattern_name=='comments':
@@ -195,12 +195,12 @@ class endapp(ApplicationLevelExtension):
                 else:
                     caller_obj = reference
                     asm_program_name = reference.value.strip().split("(")[1].replace("'","").replace('"','').strip()
-                    for asm_pgm in asm_list:
-                        if asm_pgm.get_name() == asm_program_name:
-                            link = ('callLink', reference.object,asm_pgm,reference.bookmark)
-                            self.links.append(link)
+                    for asm_pgm in asm_list[asm_program_name]:
 
+                        link = ('callLink', reference.object,asm_pgm,reference.bookmark)
+                        self.links.append(link)
 
+        logging.info("****** Total number of links {}".format(str(len(self.links))))
         
         for link in self.links:
             try:
