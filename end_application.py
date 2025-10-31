@@ -171,10 +171,9 @@ class endapp(ApplicationLevelExtension):
                 if len(asm_macro_name.split()) >= 2:
                     asm_macro_name = asm_macro_name.split()[1]
 
-                for macroObjs in asm_macro_list[asm_macro_name.strip()]:
-                    for macroObj in macroObjs:
-                        nb_links_to_ast_and_mlc+=1
-                        self.links.append(('callLink', reference.object, macroObj, reference.bookmark))
+                for macroObj in asm_macro_list[asm_macro_name.strip()]:
+                    nb_links_to_ast_and_mlc+=1
+                    self.links.append(('callLink', reference.object, macroObj, reference.bookmark))
 
         logging.info("****** Number of links from .asm and .mlc files: ".format(str(nb_links_to_ast_and_mlc)))
 
