@@ -1,3 +1,4 @@
+import cast_upgrade_1_6_23
 import unittest
 import cast.analysers.test
 

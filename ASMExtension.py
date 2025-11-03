@@ -1,3 +1,4 @@
+import cast_upgrade_1_6_23
 import cast.analysers.ua
 from cast.analysers import log, CustomObject, create_link, Bookmark, external_link
 import os
@@ -39,6 +40,12 @@ class ASMExtension(cast.analysers.ua.Extension):
         # 
 
         self.asm_regexes = [ re.compile(p) for p in [ self.program_call_regex,self.exec_sql_call_regex]]
+
+        # macros by name
+        self.macros = defaultdict(list)
+
+        # list of pair (file, program)
+        self.programs = list()
 
     def start_analysis(self):
         log.info(" Running extension code at the start of the analysis")
@@ -111,14 +118,13 @@ class ASMExtension(cast.analysers.ua.Extension):
             """
             Scan one Assembler Macro file
             """
-            self.filepath = file.get_path()
+            filepath = file.get_path()
     
             #log.info("Parsing Macro file %s..." % file)
             self.project = file.get_project()
             
             self.guid_data = Path(file.get_path()).name
     
-            self.file = file
             filepath = file.get_path()
             self.nbasmSRCScanned += 1
             #initialization
@@ -141,15 +147,15 @@ class ASMExtension(cast.analysers.ua.Extension):
                 obj_name = firstline.split("(")[1].split(")")[0]
                 self.start_pos = 1
                 self.last_pos = 1
-                #log.info("self.file is " + str(self.file))
-                asmzos_defn_obj_bookmark = Bookmark(self.file, 0, -1, (self.lastlineNb-1), -1)
+                #log.info("file is " + str(file))
+                asmzos_defn_obj_bookmark = Bookmark(file, 0, -1, (self.lastlineNb-1), -1)
                 #log.info("asmzos_defn_obj_bookmark is-->" + str(asmzos_defn_obj_bookmark))
                 
-                self.asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", self.file,self.filepath, asmzos_defn_obj_bookmark)
+                asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", file,filepath, asmzos_defn_obj_bookmark)
                 self.nbmacroCreated += 1
                 
             crc = binascii.crc32(content.encode()) 
-            self.asmzos_defn_obj.save_property('checksum.CodeOnlyChecksum', crc % 2147483648)
+            asmzos_defn_obj.save_property('checksum.CodeOnlyChecksum', crc % 2147483648)
                  
             
         elif ext.lower() in self.extensions:
@@ -157,14 +163,14 @@ class ASMExtension(cast.analysers.ua.Extension):
             Scan one Assembler  program file
             """
 
-            self.filepath = file.get_path()
+            filepath = file.get_path()
     
             #log.info("Parsing file %s..." % file)
             self.project = file.get_project()
             
             self.guid_data = Path(file.get_path()).name
     
-            self.file = file
+            file = file
             filepath = file.get_path()
             self.nbasmSRCScanned += 1
             #initialization
@@ -174,7 +180,8 @@ class ASMExtension(cast.analysers.ua.Extension):
             self.call_to_program_obj = None
     
             content = ""
-    
+            asmzos_defn_obj = None
+            
             with open_source_file(file.get_path()) as srcfile1:
                 content = srcfile1.read()
     
@@ -187,7 +194,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                 obj_name = firstline.split("(")[1].split(")")[0]
                 self.start_pos = 1
                 self.last_pos = 1
-                asmzos_defn_obj_bookmark = Bookmark(self.file, 0, -1, (self.lastlineNb-1), -1)
+                asmzos_defn_obj_bookmark = Bookmark(file, 0, -1, (self.lastlineNb-1), -1)
                 firstcode_line = "'"
                 
                 line_nb = 0
@@ -197,7 +204,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                 
                 asm_regexes = [macro_regex]
                 #log.info("macro_regex is " + str(macro_regex))           
-                self.asmzos_defn_obj = None         
+                asmzos_defn_obj = None         
                 for line in mylist:
                     line_nb += 1
                     if not line.startswith('*') and line_nb > 1:
@@ -210,19 +217,19 @@ class ASMExtension(cast.analysers.ua.Extension):
                                 #log.info(" myOnDict[0] is " + str(myOnDict[0]))
                                 search_text = myOnDict[0].search(line)
                                 #log.info("search_text" + str(search_text))
-                                self.asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", self.file,self.filepath, asmzos_defn_obj_bookmark)
+                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", file,filepath, asmzos_defn_obj_bookmark)
                                 self.nbpgmCreated += 1
                         else:
-                            if self.asmzos_defn_obj is None:
-                                self.asmzos_defn_obj = self.__create_object(self,obj_name, "ASMZOSProgram", self.file,self.filepath, asmzos_defn_obj_bookmark)
+                            if asmzos_defn_obj is None:
+                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASMZOSProgram", file,filepath, asmzos_defn_obj_bookmark)
                                 self.nbpgmCreated += 1
                             
                 
                 #log.info(" obj_name object created is " + str(obj_name))
-                self.caller_object = self.asmzos_defn_obj
+                self.caller_object = asmzos_defn_obj
              
             crc = binascii.crc32(content.encode()) 
-            self.asmzos_defn_obj.save_property('checksum.CodeOnlyChecksum', crc % 2147483648)
+            asmzos_defn_obj.save_property('checksum.CodeOnlyChecksum', crc % 2147483648)
                  
             self.caller_bookmark_new = None
             with open_source_file(file.get_path()) as srcfile:
@@ -257,10 +264,10 @@ class ASMExtension(cast.analysers.ua.Extension):
                                     
                                     if called_program_name != "":
                                     #called_program_name = asm_search_text.group(len_groups-1).strip().split()[0]
-                                        self.caller_bookmark_new = Bookmark(self.file, self.lineNb , start_pos, self.lineNb, end_pos)
+                                        self.caller_bookmark_new = Bookmark(file, self.lineNb , start_pos, self.lineNb, end_pos)
                                         if called_program_name not in self.asm_unknown_prog_main_list.keys():
                                             try:
-                                                obj = self.__create_object(self,called_program_name, "CallTo_program", self.caller_object,self.filepath, self.caller_bookmark_new)
+                                                obj = self.__create_object(self,called_program_name, "CallTo_program", self.caller_object,filepath, self.caller_bookmark_new)
                                                 self.asm_unknown_prog_main_list[called_program_name].append(obj)
                                             except:
                                                 pass
@@ -281,7 +288,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                                     if line[9] != " " and self.exec_sql_found == 'Y':
                                         #log.info("self.sql_query is " + str(self.sql_query))
                                         self.caller_object.save_property('CAST_SQL_MetricableQuery.sqlQuery', self.sql_query)
-                                        self.db_caller_bookmark = Bookmark(self.file, self.first_sql_lineNb , 0, (self.lineNb-1), 0)
+                                        self.db_caller_bookmark = Bookmark(file, self.first_sql_lineNb , 0, (self.lineNb-1), 0)
                                         self.link_to_db_object()
                                         self.sql_query = ""
                                         self.exec_sql_found = "N"
