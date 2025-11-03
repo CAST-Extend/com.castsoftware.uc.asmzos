@@ -19,7 +19,7 @@ class ASMExtension(cast.analysers.ua.Extension):
         self.nbLinksCreated = 0
         self.extensions = ['.asm','.mlc']
         self.extensions1 = ['.asmacro']
-        self.active = False
+        self.active = True
         self.nbpgmCreated = 0
         self.nbmacroCreated = 0
         self.first_sql_lineNb = ""
@@ -44,18 +44,13 @@ class ASMExtension(cast.analysers.ua.Extension):
         log.info(" Running extension code at the start of the analysis")
         try:
             options = cast.analysers.get_ua_options() #@UndefinedVariable
-            if 'Assembler' not in options:
-                self.active = False
-            else:
+            self.active = False
+            if 'Assembler' in options:
                 self.active = True
-                #self.extensions.extend(options['ASMZOS'].extensions)
-                #self.extensions1.extend(options['ASMZOS'].extensions)
+            else:
+                self.active = False
         except Exception as e:
-            exception_type, value, tb = sys.exc_info()
-            log.warning('exception_type = ' + str(exception_type) + ' Error message = ' + str(e))
-            log.warning(traceback_str)
-    
-
+            pass # unit test
 
     @staticmethod
     def __create_object(self, name, typ, parent,filepath, bookmark=None):
@@ -113,6 +108,9 @@ class ASMExtension(cast.analysers.ua.Extension):
         #log.info("file is " + str(file))
         
         if ext.lower() in self.extensions1:
+            """
+            Scan one Assembler Macro file
+            """
             self.filepath = file.get_path()
     
             #log.info("Parsing Macro file %s..." % file)
@@ -125,10 +123,6 @@ class ASMExtension(cast.analysers.ua.Extension):
             self.nbasmSRCScanned += 1
             #initialization
             self.lineNb = 0
-            
-            """
-            Scan one Assembler Macro file
-            """
 
             self.caller_object = None
             self.call_to_program_obj = None
@@ -159,6 +153,10 @@ class ASMExtension(cast.analysers.ua.Extension):
                  
             
         elif ext.lower() in self.extensions:
+            """
+            Scan one Assembler  program file
+            """
+
             self.filepath = file.get_path()
     
             #log.info("Parsing file %s..." % file)
@@ -171,11 +169,6 @@ class ASMExtension(cast.analysers.ua.Extension):
             self.nbasmSRCScanned += 1
             #initialization
             self.lineNb = 0
-            
-            """
-            Scan one Assembler  program file
-            """
-    
             
             self.caller_object = None
             self.call_to_program_obj = None
