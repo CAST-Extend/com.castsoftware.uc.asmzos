@@ -86,6 +86,24 @@ class TestIntegration(unittest.TestCase):
 
         self.assertTrue(analysis.get_link_by_caller_callee('callLink', pgm, macro))
 
+    def test_macro_linking_with_label(self):
+
+        analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        
+        analysis.add_selection('macros/sample2')
+#         analysis.set_verbose(True)
+        analysis.run()
+
+#         get_data_created_by_plugin(analysis)
+        
+        pgm = analysis.get_object_by_name('PGM', 'ASMZOSProgram')
+        self.assertTrue(pgm)
+
+        macro = analysis.get_object_by_name('MYMACRO', 'ASM_MACRO')
+        self.assertTrue(macro)
+
+        self.assertTrue(analysis.get_link_by_caller_callee('callLink', pgm, macro))
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,6 @@
+BEGIN_MACRO(MYMACRO)
+         MACRO
+         MYMACRO &REG,&VALUE
+         L     &REG,=F'&VALUE'     * Charge une constante entière dans un registre
+         MEND
+END_MACRO

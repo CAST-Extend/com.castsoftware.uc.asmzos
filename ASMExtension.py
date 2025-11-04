@@ -357,12 +357,20 @@ class ASMExtension(cast.analysers.ua.Extension):
                         tokens = splitter.split(line)
                         
                         if len(tokens) > 1:
-                            
-                            macro_name = tokens[1]
+
                             begin_column = len(tokens[0])
-                            end_column = begin_column + len(macro_name)
+                            macro_name = None
                             
-                            if macro_name in self.macros:
+                            # first case no label
+                            if tokens[0].isspace():
+                                macro_name = tokens[1]
+                                
+                            elif len(tokens) > 2:
+                                macro_name = tokens[2]
+                                begin_column += len(tokens[1])
+                            
+                            if macro_name and macro_name in self.macros:
+                                end_column = begin_column + len(macro_name)
                                 
                                 bookmark = Bookmark(file, line_number, begin_column, line_number, end_column)
                                 
