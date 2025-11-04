@@ -131,52 +131,6 @@ class endapp(ApplicationLevelExtension):
         logging.info("****** Number of Links created : {}".format(str(nbLinkCreated)))
         
  
-        # Link Assembler program to Assembler Macro
-        
-        for asm_macro in application.objects().has_type('ASM_MACRO'):
-            #logging.debug ("ASM_MACRO found: {}".format(asm_macro.get_name()))
-            asm_macro_list[asm_macro.get_name().strip()].append(asm_macro)
-            
-        logging.info("****** Number of ASM Macro {}".format(str(len(asm_macro_list))))
-        
-
-        asm_macro_regex = r'^(?!\*)(?:[\w@#$]+)*\s+([\w@#$]+)+\s*'
-        self.prg_regex = re.compile(asm_macro_regex, re.IGNORECASE)
-        self.lineNb = 0
-        
-        ## Scan through all the Assembler Programs and find the reference of Assembler Macro
-        nb_links_to_ast_and_mlc = 0
-        for asm in application.get_files(['sourceFile']):
-            # check if file is analyzed source code, or if it generated (Unknown)
-            #logging.info("CTL is " + str(CTL))
-            program_name = ""
-
-            if not asm.get_path():
-                continue
-
-            if not (asm.get_path().lower().endswith('.asm')) and not (asm.get_path().lower().endswith('.mlc')):
-                continue
-
-            self.lineNb = 0
-
-            macro_access = ReferenceFinder()
-            macro_access.add_pattern("macro", before="", element=asm_macro_regex, after="")
-            macro_access.add_pattern("comments", before="", element=asm_macro_regex, after="")
-     
-            references = []
-            references += [reference for reference in macro_access.find_references_in_file(asm)]
-            logging.info("coucou debug nb_references: " + str(len(references)) + " for asm file" + asm.get_path())
-            for reference in references:
-                asm_macro_name = reference.value.strip()
-                if len(asm_macro_name.split()) >= 2:
-                    asm_macro_name = asm_macro_name.split()[1]
-
-                for macroObj in asm_macro_list[asm_macro_name.strip()]:
-                    nb_links_to_ast_and_mlc+=1
-                    self.links.append(('callLink', reference.object, macroObj, reference.bookmark))
-
-        logging.info("****** Number of links from .asm and .mlc files: ".format(str(nb_links_to_ast_and_mlc)))
-
         for o in application.objects().has_type('CAST_COBOL_Program'):
   
             #logging.info(str(o.get_path()))

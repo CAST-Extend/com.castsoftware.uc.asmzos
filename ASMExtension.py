@@ -1,6 +1,13 @@
+"""
+reference documentation 
+- https://www.ibm.com/docs/en/SSENW6_1.6.0/pdf/asmr1024_pdf.pdf
+
+"""
+
 import cast_upgrade_1_6_23
 import cast.analysers.ua
 from cast.analysers import log, CustomObject, create_link, Bookmark, external_link
+from cast.application import open_source_file
 import os
 import sys
 import traceback
@@ -9,8 +16,9 @@ from collections import OrderedDict
 import random
 from pathlib import Path
 import re
-from _collections import defaultdict
+from collections import defaultdict
 import binascii
+from light_parser.splitter import Splitter
 
 
 class ASMExtension(cast.analysers.ua.Extension):
@@ -151,7 +159,8 @@ class ASMExtension(cast.analysers.ua.Extension):
                 asmzos_defn_obj_bookmark = Bookmark(file, 0, -1, (self.lastlineNb-1), -1)
                 #log.info("asmzos_defn_obj_bookmark is-->" + str(asmzos_defn_obj_bookmark))
                 
-                asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", file,filepath, asmzos_defn_obj_bookmark)
+                asmzos_defn_obj = self.__create_object(self, obj_name, "ASM_MACRO", file, filepath, asmzos_defn_obj_bookmark)
+                self.macros[obj_name].append(asmzos_defn_obj)
                 self.nbmacroCreated += 1
                 
             crc = binascii.crc32(content.encode()) 
@@ -217,11 +226,13 @@ class ASMExtension(cast.analysers.ua.Extension):
                                 #log.info(" myOnDict[0] is " + str(myOnDict[0]))
                                 search_text = myOnDict[0].search(line)
                                 #log.info("search_text" + str(search_text))
-                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", file,filepath, asmzos_defn_obj_bookmark)
+                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", file, filepath, asmzos_defn_obj_bookmark)
+                                self.macros[obj_name].append(asmzos_defn_obj)
                                 self.nbpgmCreated += 1
                         else:
                             if asmzos_defn_obj is None:
-                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASMZOSProgram", file,filepath, asmzos_defn_obj_bookmark)
+                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASMZOSProgram", file, filepath, asmzos_defn_obj_bookmark)
+                                self.programs.append((file, asmzos_defn_obj))
                                 self.nbpgmCreated += 1
                             
                 
@@ -316,6 +327,51 @@ class ASMExtension(cast.analysers.ua.Extension):
     def end_analysis(self):
         if not self.active:
             return
+        
+        log.info('Scanning files for macro calls')
+        # will split text with blanks keeping them as elements
+        # for example 
+        # splitter.split('NAME COMMAND REMARK')
+        # -> ['NAME', ' ', 'COMMAND', ' ', REMARK']
+        # splitter.split(' \t COMMAND')
+        # -> ' \t ', 'COMMAND']
+        splitter = Splitter([])
+        
+        # second pass, linking
+        for file, program in self.programs:
+            
+            try:
+                log.info('Scanning ' + file.get_path())
+                with open_source_file(file.get_path()) as content:
+                    
+                    line_number = 0
+                    for line in content:
+                        line_number += 1
+                        if line.startswith(('*', '.*')):
+                            # comment
+                            continue
+                    
+                        if not line:
+                            continue
+                        
+                        tokens = splitter.split(line)
+                        
+                        if len(tokens) > 1:
+                            
+                            macro_name = tokens[1]
+                            begin_column = len(tokens[0])
+                            end_column = begin_column + len(macro_name)
+                            
+                            if macro_name in self.macros:
+                                
+                                bookmark = Bookmark(file, line_number, begin_column, line_number, end_column)
+                                
+                                for macro in self.macros[macro_name]:
+                                    create_link("callLink", program, macro, bookmark)
+            
+            except:
+                log.warning(traceback.format_exc())
+        
         log.info(" Statistics for AIA ")
         log.info("*****************************************************************")
         log.info(" Number of Source files Scanned " + str(self.nbasmSRCScanned))
@@ -342,52 +398,3 @@ class ASMExtension(cast.analysers.ua.Extension):
                     create_link(_type, self.caller_object, embedded.callee,self.db_caller_bookmark)
                     #self.nbLinksBItoDBObjCreated += 1
                     
-
-def open_source_file(path, encoding=None):
-    """
-    Equivalent of python open(path) that autotdetects encoding.
-    
-    handles long path, UNC paths
-    
-    :param encoding: specified encoding (optional) 
-    
-    :rtype: file 
-    """
-    from chardet.universaldetector import UniversalDetector
-    
-    # for long pathes : see https://stackoverflow.com/questions/29557760/long-paths-in-python-on-windows
-    local_path = path
-    
-    
-    #log.debug("sys.platform.startswith is " + str(sys.platform))
-
-    if sys.platform.startswith('win32'):
-        constant = '\\\\?\\'
-        
-        if not local_path.startswith(constant):
-            local_path = local_path.replace('/', '\\')
-            if local_path.startswith(r'\\'):
-                local_path = r'\\?\UNC' + local_path[1:]
-            elif os.path.isabs(local_path):
-                local_path = constant + local_path
-    
-    #log.debug("encoding is " + str(encoding))
-
-    if not encoding:
-        detector = UniversalDetector()
-        with open(local_path, 'rb') as f:
-            count = 0
-            for line in f:
-                detector.feed(line)
-                count += 1
-                if detector.done or count > 100: 
-                    break
-        detector.close()
-    
-        encoding = detector.result['encoding']
-        log.debug('File %s has %s as detected encoding' % (path, encoding))
-        
-    result = open(local_path, 'r', encoding=encoding, errors='replace')
-    return result
-
-

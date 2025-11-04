@@ -50,7 +50,7 @@ def get_data_created_by_plugin(analysis):
         caller = getattr(o, 'link.caller')
         callee = getattr(o, 'link.callee')
         
-        print('  ', caller.type, getattr(caller,'identification.fullName'), '->', callee.type, getattr(callee,'identification.fullName'))
+        print('  ', caller.type, getattr(caller,'identification.fullName'), '-', o.type, '->', callee.type, getattr(callee,'identification.fullName'))
 
 
 
@@ -67,6 +67,24 @@ class TestIntegration(unittest.TestCase):
 #         get_data_created_by_plugin(analysis)
         
         self.assertTrue(analysis.get_objects_by_name('GIMASAMP', 'ASMZOSProgram'))
+
+    def test_macro_linking(self):
+
+        analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        
+        analysis.add_selection('macros/sample1')
+#         analysis.set_verbose(True)
+        analysis.run()
+
+#         get_data_created_by_plugin(analysis)
+        
+        pgm = analysis.get_object_by_name('PGM', 'ASMZOSProgram')
+        self.assertTrue(pgm)
+
+        macro = analysis.get_object_by_name('MYMACRO', 'ASM_MACRO')
+        self.assertTrue(macro)
+
+        self.assertTrue(analysis.get_link_by_caller_callee('callLink', pgm, macro))
 
 
 if __name__ == "__main__":
