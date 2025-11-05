@@ -37,7 +37,6 @@
 		<description>Assembler Program</description>
 		<inheritedCategory name="Assembler"/>
 		<inheritedCategory name="UAObject"/>
-        <inheritedCategory name="CAST_SQL_MetricableQuery" />
 		<inheritedCategory name="APM ASMZOS Artifacts"/>
 		<inheritedCategory name="identification"/>
 		<inheritedCategory name="persistent"/>
@@ -72,7 +71,6 @@
 
     <type name="ASM_MACRO" rid="2043007">
         <description>Assembler Macro</description>
-        <inheritedCategory name="CAST_SQL_MetricableQuery" />
 		<inheritedCategory name="UAObject" />
         <inheritedCategory name="METRICABLE" />
         <inheritedCategory name="Assembler" />
