@@ -84,5 +84,25 @@
 		<tree parent="sourceFile" category="amtParentship"/>
 		<tree parent="EnlightenASMZOS" category="EnlightenTree"/>
     </type>	
-	
+
+    <type name="ASMZOSSQLQuery" rid="2043008">
+        <description>Assembler SQL Query</description>
+        <inheritedCategory name="Assembler"/>
+        <inheritedCategory name="UAObject"/>
+        <inheritedCategory name="CAST_SQL_MetricableQuery" />
+        <inheritedCategory name="APM ASMZOS Artifacts"/>
+        <inheritedCategory name="identification"/>
+        <inheritedCategory name="persistent"/>
+        <inheritedCategory name="bookmark"/>
+        <inheritedCategory name="POSITIONABLE"/>
+        <inheritedCategory name="metric"/>
+        <inheritedCategory name="METRICABLE"/>
+        <inheritedCategory name="EnlightenBrowsable"/>
+        <inheritedCategory name="EnlightenGraphable"/>
+        <inheritedCategory name="WithEnlightenProperties"/>
+        <inheritedCategory name="ESCALATION_ALL"/>
+        <inheritedCategory name="caseInsensitive"/>
+        <inheritedCategory name="CastSystemViews"/> 
+    </type>
+    	
 </metaModel>

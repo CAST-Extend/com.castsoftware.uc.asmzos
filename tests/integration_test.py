@@ -104,6 +104,89 @@ class TestIntegration(unittest.TestCase):
 
         self.assertTrue(analysis.get_link_by_caller_callee('callLink', pgm, macro))
 
+    def test_create_sql_queries_modern_form(self):
+
+        analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        
+        analysis.add_selection('query/sample1')
+#         analysis.set_verbose(True)
+        analysis.run()
+
+#         get_data_created_by_plugin(analysis)
+        
+        pgm = analysis.get_object_by_name('PGM', 'ASMZOSProgram')
+        self.assertTrue(pgm)
+
+        queries = analysis.get_objects_by_category('ASMZOSSQLQuery')
+        self.assertEqual(2, len(queries))
+
+        # check names
+        query_names = [getattr(query, 'identification.name') for query in sorted(queries.values(), 
+                                                                                 key=lambda x:x.id)]
+        self.assertEqual(['SELECT LASTNAME INTO :ENAME',
+                          'COMMIT'], query_names)
+
+        query_texts = [getattr(query, 'CAST_SQL_MetricableQuery.sqlQuery') for query in sorted(queries.values(), 
+                                                                                               key=lambda x:x.id)]
+        
+        self.assertEqual([
+'''
+             SELECT LASTNAME
+               INTO :ENAME
+               FROM   EMP
+              WHERE  EMPNO = :EMPNO
+          ''',
+              ' COMMIT ',], query_texts)
+
+        # check links
+        for query in queries.values():
+            self.assertTrue(analysis.get_link_by_caller_callee('callLink', pgm, query))
+            self.assertTrue(analysis.get_link_by_caller_callee('parentLink', query, pgm))
+
+    def test_create_sql_queries_ancient_form(self):
+
+        analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        
+        analysis.add_selection('query/sample2')
+#         analysis.set_verbose(True)
+        analysis.run()
+
+#         get_data_created_by_plugin(analysis)
+        
+        pgm = analysis.get_object_by_name('PGM', 'ASMZOSProgram')
+        self.assertTrue(pgm)
+
+        queries = analysis.get_objects_by_category('ASMZOSSQLQuery')
+        self.assertEqual(4, len(queries))
+
+        # check names
+        query_names = [getattr(query, 'identification.name') for query in sorted(queries.values(), 
+                                                                                 key=lambda x:x.id)]
+        
+        self.assertEqual(['SELECT LASTNAME INTO :ENAME', 
+                          'WHENEVER SQLERROR GO TO', 
+                          'WHENEVER NOT FOUND GO', 
+                          'WHENEVER SQLWARNING GO TO'], query_names)
+
+        query_texts = [getattr(query, 'CAST_SQL_MetricableQuery.sqlQuery') for query in sorted(queries.values(), 
+                                                                                               key=lambda x:x.id)]
+        
+        self.assertEqual([
+'''                                                     
+             SELECT LASTNAME                                           
+               INTO :ENAME                                             
+               FROM   EMP                                              
+              WHERE  EMPNO = :EMPNO
+''',
+              ' WHENEVER SQLERROR  GO TO SQLERMOD                    ',
+              ' WHENEVER NOT FOUND GO TO SQLERMOD                    ',
+              ' WHENEVER SQLWARNING GO TO SQLERMOD                   '], query_texts)
+
+        # check links
+        for query in queries.values():
+            self.assertTrue(analysis.get_link_by_caller_callee('callLink', pgm, query))
+            self.assertTrue(analysis.get_link_by_caller_callee('parentLink', query, pgm))
+
 
 if __name__ == "__main__":
     unittest.main()

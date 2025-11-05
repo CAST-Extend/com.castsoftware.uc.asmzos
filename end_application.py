@@ -130,7 +130,7 @@ class endapp(ApplicationLevelExtension):
 
         logging.info("****** Number of Links created : {}".format(str(nbLinkCreated)))
         
- 
+        logging.info("Scanning COBOL programs for exec cics load")
         for o in application.objects().has_type('CAST_COBOL_Program'):
   
             #logging.info(str(o.get_path()))
@@ -138,9 +138,11 @@ class endapp(ApplicationLevelExtension):
             if not o.get_path():
                 continue
 
+            logging.info("Scanning " + o.get_path())
+            
             references = []
             references += [reference for reference in cics_load_access.find_references_in_file(o)]
-            logging.info("coucou debug nb_references: " + str(len(references)) + " for current program " + o.get_path())
+            
             #logging.info("references is " + str(references))
             for reference in references:
                 if  reference.pattern_name=='comments':
