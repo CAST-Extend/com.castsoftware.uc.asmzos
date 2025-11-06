@@ -365,7 +365,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                                 # second case a label 
                                 # 'LABEL MYMACRO PARAMETERS...'
                                 macro_name = tokens[2]
-                                begin_column += len(tokens[1])
+                                begin_column += len(tokens[1]) + 1
                             
                             if macro_name and macro_name in self.macros:
                                 end_column = begin_column + len(macro_name)
@@ -389,7 +389,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                                     
                                     bookmark = Bookmark(file, 
                                                         current_exec_sql_begin_line, 
-                                                        current_exec_sql_begin_column,
+                                                        current_exec_sql_begin_column+1,
                                                         line_number,
                                                         len(text_fragment))
                                     
@@ -410,7 +410,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                                     
                                     bookmark = Bookmark(file, 
                                                         current_exec_sql_begin_line, 
-                                                        current_exec_sql_begin_column,
+                                                        current_exec_sql_begin_column+1,
                                                         line_number,
                                                         len(text_fragment))
                                     
@@ -431,6 +431,12 @@ class ASMExtension(cast.analysers.ua.Extension):
                                 if 'END-EXEC' in line:
                                     current_exec_sql_text = line[current_exec_sql_begin_column:].split('END-EXEC')[0]
 
+                                    bookmark = Bookmark(file, 
+                                                        current_exec_sql_begin_line, 
+                                                        current_exec_sql_begin_column+1,
+                                                        line_number,
+                                                        current_exec_sql_begin_column+len(current_exec_sql_text))
+
                                     self.create_sql_query(program, current_exec_sql_text, bookmark)
                                     # end of exec sql
                                     current_exec_sql_text = None
@@ -446,12 +452,11 @@ class ASMExtension(cast.analysers.ua.Extension):
                                     current_exec_sql_text += '\n'
                                 else:
                                     # mono line exec sql formated code
-                                    
                                     bookmark = Bookmark(file, 
                                                         current_exec_sql_begin_line, 
-                                                        current_exec_sql_begin_column,
+                                                        current_exec_sql_begin_column+1,
                                                         line_number,
-                                                        len(text_fragment))
+                                                        current_exec_sql_begin_column+len(text_fragment))
                                     
                                     self.create_sql_query(program, current_exec_sql_text, bookmark)
                                     # end of exec sql
