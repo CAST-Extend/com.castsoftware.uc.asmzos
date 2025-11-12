@@ -12,7 +12,7 @@
   </category>
   <category name="Assembler" rid="2043002">
     <description>Assembler</description>
-    <attribute name="extensions" stringValue="*.asm;*.ASM;*.mlc;*.MLC;*.asmacro;*.ASMACRO"/>
+    <attribute name="extensions" stringValue="*.asm;*.mlc;*.asmacro"/>
     <inheritedCategory name="UniversalLanguage"/>
     <inheritedCategory name="CsvLanguage"/>
   </category>
