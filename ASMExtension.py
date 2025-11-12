@@ -402,7 +402,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                             else:
                                 text_fragment = line[:71]
                                 current_exec_sql_text += text_fragment
-                                if len(line) > 71 and line[71] == 'X':
+                                if len(line) > 71 and line[71] in ('X', '*'):
                                     # multi line exec sql formated code
                                     current_exec_sql_text += '\n'
                                 else:
@@ -447,7 +447,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                                 # columned format
                                 text_fragment = line[:71]
                                 current_exec_sql_text = text_fragment[current_exec_sql_begin_column:]
-                                if line[71] == 'X':
+                                if line[71] in ('X', '*'):
                                     # multi line exec sql formated code
                                     current_exec_sql_text += '\n'
                                 else:
