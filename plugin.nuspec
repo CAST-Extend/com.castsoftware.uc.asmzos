@@ -2,7 +2,7 @@
 <package xmlns="http://schemas.microsoft.com/packaging/2013/05/nuspec.xsd">
   <metadata>
     <id>com.castsoftware.uc.asmzos</id>
-    <version>1.2.0-funcrel</version>
+    <version>1.2.1-beta0@@@</version>
     <title>Technology Extension for Assembler ZOS</title>
     <authors>CAST User Community</authors>
     <owners>CAST</owners>
