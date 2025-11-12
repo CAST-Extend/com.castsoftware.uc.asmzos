@@ -17,6 +17,7 @@
       <dependency id="CAIP" version="8.3.0" />
       <dependency id="com.castsoftware.labs.cobol.swcopy.update" version="1.0.13" />
       <dependency id="com.castsoftware.dmtgenericfilediscoverer" version="1.0.6" />
+      <dependency id="com.castsoftware.sqlanalyzer" version="3.7.4-funcrel" />
     </dependencies>
   </metadata>
 </package>

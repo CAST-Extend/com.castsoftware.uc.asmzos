@@ -59,6 +59,8 @@ class TestIntegration(unittest.TestCase):
     def test_create_program(self):
 
         analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        analysis.add_dependency('com.castsoftware.internal.platform')
+        analysis.add_dependency(r'C:\ProgramData\CAST\CAST\Extensions\com.castsoftware.sqlanalyzer.3.7.17-funcrel')
         
         analysis.add_selection('sample')
 #         analysis.set_verbose()
@@ -71,6 +73,8 @@ class TestIntegration(unittest.TestCase):
     def test_macro_linking(self):
 
         analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        analysis.add_dependency('com.castsoftware.internal.platform')
+        analysis.add_dependency(r'C:\ProgramData\CAST\CAST\Extensions\com.castsoftware.sqlanalyzer.3.7.17-funcrel')
         
         analysis.add_selection('macros/sample1')
 #         analysis.set_verbose(True)
@@ -89,6 +93,8 @@ class TestIntegration(unittest.TestCase):
     def test_macro_linking_with_label(self):
 
         analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        analysis.add_dependency('com.castsoftware.internal.platform')
+        analysis.add_dependency(r'C:\ProgramData\CAST\CAST\Extensions\com.castsoftware.sqlanalyzer.3.7.17-funcrel')
         
         analysis.add_selection('macros/sample2')
 #         analysis.set_verbose(True)
@@ -107,6 +113,8 @@ class TestIntegration(unittest.TestCase):
     def test_create_sql_queries_modern_form(self):
 
         analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        analysis.add_dependency('com.castsoftware.internal.platform')
+        analysis.add_dependency(r'C:\ProgramData\CAST\CAST\Extensions\com.castsoftware.sqlanalyzer.3.7.17-funcrel')
         
         analysis.add_selection('query/sample1')
 #         analysis.set_verbose(True)
@@ -146,6 +154,8 @@ class TestIntegration(unittest.TestCase):
     def test_create_sql_queries_ancient_form(self):
 
         analysis = cast.analysers.test.UATestAnalysis('Assembler')
+        analysis.add_dependency('com.castsoftware.internal.platform')
+        analysis.add_dependency(r'C:\ProgramData\CAST\CAST\Extensions\com.castsoftware.sqlanalyzer.3.7.17-funcrel')
         
         analysis.add_selection('query/sample2')
 #         analysis.set_verbose(True)

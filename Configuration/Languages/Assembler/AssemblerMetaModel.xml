@@ -102,5 +102,45 @@
         <inheritedCategory name="caseInsensitive"/>
         <inheritedCategory name="CastSystemViews"/> 
     </type>
-    	
+
+    <!-- Missing database Objects -->
+    <type name="ASMZOS_MissingTable_Schema" rid="2043009">
+        <description>Missing Schema</description>
+        <inheritedCategory name="Assembler" />
+        <inheritedCategory name="UAObject" />
+        <inheritedCategory name="CAST_SQLScript_MissingSchema_Schema" />
+
+        <tree parent="EnlightenUniversalObjects" category="EnlightenTree" />
+    </type>
+
+    <type name="ASMZOS_MissingTable_Table" rid="2043010">
+        <description>Missing Table</description>
+        <inheritedCategory name="Assembler" />
+        <inheritedCategory name="UAObject" />
+        <inheritedCategory name="CAST_SQLScript_MissingTable_Table" />
+
+        <attribute name="AUTO_FOLDER_THRESHOLD" intValue="1"/>
+        <tree parent="EnlightenUniversalObjects" category="EnlightenTree" />
+    </type>
+
+    <type name="ASMZOS_MissingTable_TableColumn" rid="2043011">
+        <description>Missing Table Column</description>
+        <inheritedCategory name="UAObject" />
+        <inheritedCategory name="Assembler" />
+
+        <attribute name="AUTO_FOLDER_THRESHOLD" intValue="1"/>
+        <tree parent="EnlightenUniversalObjects" category="EnlightenTree" />
+    </type>
+
+    <type name="ASMZOS_MissingTable_Procedure" rid="2043012">
+        <description>Missing Procedure</description>
+        <inheritedCategory name="UAObject" />
+        <inheritedCategory name="Assembler" />
+        <inheritedCategory name="CAST_SQLScript_MissingProcedure_Procedure" />
+
+        <attribute name="AUTO_FOLDER_THRESHOLD" intValue="1"/>
+        <tree parent="EnlightenUniversalObjects" category="EnlightenTree" />
+    </type>
+
+
 </metaModel>
