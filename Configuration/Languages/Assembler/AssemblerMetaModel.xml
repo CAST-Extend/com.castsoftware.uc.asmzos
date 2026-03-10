@@ -50,6 +50,7 @@
 		<inheritedCategory name="ESCALATION_ALL"/>
 		<inheritedCategory name="caseInsensitive"/>
 		<inheritedCategory name="CastSystemViews"/>	
+		<inheritedCategory name="CAST_Program"/>
 		<tree parent="useSelectLink" category="CallerLinkable"/>
 		<tree parent="useUpdateLink" category="CallerLinkable"/>
 		<tree parent="useInsertLink" category="CallerLinkable"/>
