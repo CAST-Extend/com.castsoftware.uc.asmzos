@@ -1,36 +1,29 @@
-"""
-reference documentation 
-- https://www.ibm.com/docs/en/SSENW6_1.6.0/pdf/asmr1024_pdf.pdf
-
-"""
-
-import cast_upgrade_1_6_23
+import cast_upgrade_1_6_25
 import cast.analysers.ua
-from cast.analysers import log, CustomObject, create_link, Bookmark, external_link
+from cast.analysers import log, CustomObject, create_link, Bookmark
 from cast.application import open_source_file
 import os, sys, traceback, re, binascii
 import cast
 from collections import OrderedDict, defaultdict
-from pathlib import Path
 from light_parser.splitter import Splitter
-
-
+ 
+ 
 class Variant:
     
     # file with end-exec, new format
     with_end_exec = 1
     # file without end-exec, old format
     without_end_exec = 2
-
-
+ 
+ 
 class ASMExtension(cast.analysers.ua.Extension):
-
+ 
     def __init__(self):
         
         self.nbLinksCreated = 0
         self.extensions = ['.asm','.mlc']
         self.extensions1 = ['.asmacro']
-        self.active = True
+        self.active = False
         self.nbpgmCreated = 0
         self.nbmacroCreated = 0
         self.first_sql_lineNb = ""
@@ -42,17 +35,64 @@ class ASMExtension(cast.analysers.ua.Extension):
         self.comment_regex = "^(\*).*"
         self.macro_check = r'^(?!\*).*(MACRO)+\s*'
         self.program_call_regex =  '[ \t]+((CALL[ \t]+([\w-]+))+|PROGRAM\(\'([\w-]+))'
-
+        self.ygcall_regex = '\s+YGCALL\s+\'([\w\_\#\@]+)+\''
+        self.copy_regex = "\s+COPY\s+([\w\_\#\@]+)"
+        self.loadep_regex = "\s+LOAD\s+EP\s+([\w\_\#\@]+)"
+ 
+        self.NAME_CLASS = r"[\w#@.\-\£]+"
+ 
+        self.YGCALL_RE = re.compile(
+            r"""\bYGCALL\s+         
+                (['"])              
+                (?P<name>""" + self.NAME_CLASS + r""")   
+                \1                 
+            """,
+            re.IGNORECASE | re.VERBOSE
+        )
+ 
+ 
+ 
+        self.NAME_CLASS = r"[\w#@.\-]+"
+ 
+        # COPY
+        self.COPY_RE = re.compile(
+            r"\bCOPY\s+(?P<name>" + self.NAME_CLASS + r")\b",
+            re.IGNORECASE
+        )
+ 
+        # LOAD EP
+        self.LOADEP_RE = re.compile(
+            r"\bLOAD\s+EP\s+\=(?P<name>" + self.NAME_CLASS + r")\b",
+            re.IGNORECASE
+        )
+ 
+        # CALL
+        self.CALL_RE = re.compile(
+            r"\bCALL\s+(?P<name>" + self.NAME_CLASS + r")\b",
+            re.IGNORECASE
+        )
+ 
+        # Token at start of operand
+        self.TOKEN_AT_START = re.compile(
+            r"^\s*(?P<name>" + self.NAME_CLASS + r")\b",
+            re.IGNORECASE
+        )
+ 
+        # EXEC CICS LOAD PROGRAM('NAME') or "NAME"
+        self.CICS_LOAD_PROGRAM_RE = re.compile(
+            r"\bCICS\s+LOAD\s+PROGRAM\s*\(\s*'\"['\"]\s*\)",
+            re.IGNORECASE
+        )
+ 
+ 
         self.asm_regexes = [re.compile(p) for p in [self.program_call_regex]]
-
-        # macros by name
+ 
         self.macros = defaultdict(list)
-
-        # list of pair (file, program)
+ 
         self.programs = list()
-
+ 
         self.query_guid_number = defaultdict(int)
-
+ 
     def start_analysis(self):
         log.info(" Running extension code at the start of the analysis")
         try:
@@ -64,32 +104,109 @@ class ASMExtension(cast.analysers.ua.Extension):
                 self.active = False
         except Exception as e:
             pass # unit test
-
+ 
+ 
+    def first_72(self, line):
+        # Expand tabs, strip newline, pad/truncate to exactly 72 chars
+        line = line.expandtabs(8).rstrip("\r\n")
+        return (line + " " * 72)[:72]
+ 
+    def parse_fields(self, seg):
+        # Fixed-format slices
+        right = seg[9:]
+ 
+        # Split once: first token is opcode, remainder is operand (raw)
+        parts = right.split(None, 1)
+        if not parts:
+            return "", "",""
+ 
+        #return opcode, operand_raw
+ 
+        opcode_field = parts[0]
+ 
+        #opcode_field = seg[9:15]    # cols 10–15
+        #operand_raw  = seg[15:71]   # cols 16–71
+        # Remainder becomes operand; limit to typical field width (16–71 → 56 chars)
+        operand_raw = parts[1][:56].rstrip() if len(parts) > 1 else ""
+ 
+        # Extract first token from opcode field, then upper
+        op = opcode_field.strip()
+        if op:
+            op = op.split()[0]
+        operand = operand_raw.rstrip()
+        
+        return (op.upper() if op else ""), operand, {
+            "opcode_field_raw": opcode_field,
+            "operand_field_raw": operand_raw
+        }
+ 
+ 
+    def normalize_opcode_and_operand(self, opcode, operand):
+        """
+        Normalize:
+          - LOAD EP=... -> ('LOAD_EP', value)
+          - LOAD EP ... -> ('LOAD_EP', value)
+          - LOAD P=...  -> ('LOAD_P', value)
+          - LOAD P ...  -> ('LOAD_P', value)
+        Handles the split 'LOAD E' + leading 'P' in operand.
+        """
+        if opcode and opcode.upper() == "LOAD":
+            opu = (operand or "")
+            lead = opu.lstrip()
+ 
+            def consume_token(token):
+                tlen = len(token)
+                if lead[:tlen].upper() == token and (len(lead) == tlen or lead[tlen] in " =:"):
+                    rest = lead[tlen:]
+                    rest = rest.lstrip()
+                    if rest and rest[0] in ('=', ':'):
+                        rest = rest[1:].lstrip()
+                    return rest
+                return None
+ 
+            rest = consume_token("EP")
+            if rest is not None:
+                return "LOAD_EP", rest
+ 
+            rest = consume_token("P")
+            if rest is not None:
+                return "LOAD_EP", rest
+ 
+            if operand and operand.lstrip().startswith("P"):
+                lead = operand.lstrip()
+                rest = lead[1:].lstrip()
+                if rest and rest[0] in ('=', ':'):
+                    rest = rest[1:].lstrip()
+                return "LOAD_EP", rest
+ 
+        # Default: return as-is
+        return opcode, operand
+ 
+ 
+ 
     @staticmethod
     def __create_object(self, name, typ, parent,filepath, bookmark=None):
         obj = None
-
+ 
         fullname = self.create_guid(typ, name) + '/' + filepath + '/'
         
         try:
             if name != "":
                 obj = CustomObject()                    
                 obj.set_name(name)
-                obj.set_fullname(name)
+                obj.set_fullname(fullname)
                 obj.set_type(typ)
                 obj.set_parent(parent)
                 obj.set_guid(fullname)
                 
                 obj.save()
-                #log.info('Saved object: ' + str(name) + ' type:' + str(typ))
-                #log.info("bookmark is " + str(bookmark))
                 if bookmark != None and (typ != 'ASMZOSProgram' and typ != 'ASM_MACRO'):
                     link = ('callLink', parent, obj, bookmark)
                     self.links.append(link)
                 
                 if bookmark != None:    
                     obj.save_position(bookmark)
-
+ 
             return obj
         except Exception as e:
             log.warning('Exception while saving object ' + str(name) + ' error: ' + str(e))
@@ -100,205 +217,156 @@ class ASMExtension(cast.analysers.ua.Extension):
             
         return None
     
-
+ 
     def start_file(self,file):
-    
         self.temp_links = []
         self.links = []
-        
+
         if not self.active:
-            return # no need to do anything
-        
+            return  # no need to do anything
+
         filepath = file.get_path().lower()
-
         log.info('Scanning ' + filepath)
-        
-        #_, <- because we're discarding the first part of the splitext
-        _, ext = os.path.splitext(filepath)
-        
-        #log.info("ext is" + str(ext))
-        #log.info("file is " + str(file))
-        
-        if ext.lower() in self.extensions1:
-            """
-            Scan one Assembler Macro file
-            """
-            filepath = file.get_path()
-    
-            #log.info("Parsing Macro file %s..." % file)
-            self.project = file.get_project()
-            
-            self.guid_data = Path(file.get_path()).name
-    
-            filepath = file.get_path()
-            self.nbasmSRCScanned += 1
-            #initialization
-            line_number = 0
 
-            caller_object = None
+        _, ext = os.path.splitext(filepath)
+
+        if ext.lower() in self.extensions1:
+            filepath = file.get_path()
+            self.project = file.get_project()
+            self.nbasmSRCScanned += 1
+
             self.call_to_program_obj = None
-    
-            content = ""
-    
-            with open_source_file(file.get_path()) as srcfile1:
-                content = srcfile1.read()
-    
-            with open_source_file(file.get_path()) as srcfile1:
-                #log.info("srcfile1" + str(srcfile1))             
-                mylist = [line.rstrip('\n') for line in srcfile1]
-                firstline = mylist[0]
-                self.firstlineNb = 1
-                self.lastlineNb = len(mylist)
-                obj_name = firstline.split("(")[1].split(")")[0]
-                self.start_pos = 1
-                self.last_pos = 1
-                #log.info("file is " + str(file))
-                asmzos_defn_obj_bookmark = Bookmark(file, 0, -1, (self.lastlineNb-1), -1)
-                #log.info("asmzos_defn_obj_bookmark is-->" + str(asmzos_defn_obj_bookmark))
-                
-                asmzos_defn_obj = self.__create_object(self, obj_name, "ASM_MACRO", file, filepath, asmzos_defn_obj_bookmark)
-                self.macros[obj_name].append(asmzos_defn_obj)
-                self.nbmacroCreated += 1
-                
-            crc = binascii.crc32(content.encode()) 
+
+            with open_source_file(filepath) as srcfile:
+                content = srcfile.read()
+                srcfile.seek(0)   
+                mylist = [line.rstrip('\n') for line in srcfile]
+
+            self.firstlineNb = 1
+            self.lastlineNb = len(mylist)
+
+            firstline = mylist[0]
+            obj_name = firstline.split("(")[1].split(")")[0]
+
+            self.start_pos = 1
+            self.last_pos = 1
+
+            asmzos_defn_obj_bookmark = Bookmark(file, 0, -1, self.lastlineNb - 1, -1)
+            asmzos_defn_obj = self.__create_object(
+                self, obj_name, "ASM_MACRO", file, filepath, asmzos_defn_obj_bookmark
+            )
+            self.macros[obj_name].append(asmzos_defn_obj)
+            self.nbmacroCreated += 1
+
+            crc = binascii.crc32(content.encode())
             asmzos_defn_obj.save_property('checksum.CodeOnlyChecksum', crc % 2147483648)
-                 
             
         elif ext.lower() in self.extensions:
             """
-            Scan one Assembler  program file
+            Scan one Assembler program file
             """
             filepath = file.get_path()
-    
-            #log.info("Parsing file %s..." % file)
             self.project = file.get_project()
-            
-            self.guid_data = Path(file.get_path()).name
-    
-            file = file
-            filepath = file.get_path()
             self.nbasmSRCScanned += 1
-            #initialization
-            line_number = 0
-            
-            caller_object = None
+
+            # initialization
             self.call_to_program_obj = None
-    
-            content = ""
             asmzos_defn_obj = None
-            
-            with open_source_file(file.get_path()) as srcfile1:
-                content = srcfile1.read()
-    
-            with open_source_file(file.get_path()) as srcfile1:
-                #log.info("srcfile1" + str(srcfile1))             
-                mylist = [line.rstrip('\n') for line in srcfile1]
-                firstline = mylist[0]
-                self.firstlineNb = 1
-                self.lastlineNb = len(mylist)
-                obj_name = firstline.split("(")[1].split(")")[0]
-                self.start_pos = 1
-                self.last_pos = 1
-                asmzos_defn_obj_bookmark = Bookmark(file, 0, -1, (self.lastlineNb-1), -1)
-                firstcode_line = "'"
-                
-                line_nb = 0
-                macro_linenum = 0
-                uncommented_line = 0
-                macro_regex = re.compile(self.macro_check)
-                
-                asm_regexes = [macro_regex]
-                #log.info("macro_regex is " + str(macro_regex))
-                # the main object we will create (Program of Macro)
-                asmzos_defn_obj = None         
-                for line in mylist:
-                    line_nb += 1
-                    if not line.startswith('*') and line_nb > 1:
-                        uncommented_line += 1
-                        myOnDict = [compiled_regex for compiled_regex in asm_regexes if re.match(compiled_regex,line)]
-                        #log.info("myOnDict is " + str(myOnDict))
-                        if myOnDict:
-                            #log.info("uncommented_line is " + str(uncommented_line))
-                            if uncommented_line == self.firstlineNb:
-                                #log.info(" myOnDict[0] is " + str(myOnDict[0]))
-                                search_text = myOnDict[0].search(line)
-                                #log.info("search_text" + str(search_text))
-                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASM_MACRO", file, filepath, asmzos_defn_obj_bookmark)
-                                self.macros[obj_name].append(asmzos_defn_obj)
-                                self.nbpgmCreated += 1
-                        else:
-                            if asmzos_defn_obj is None:
-                                asmzos_defn_obj = self.__create_object(self,obj_name, "ASMZOSProgram", file, filepath, asmzos_defn_obj_bookmark)
-                                self.programs.append((file, asmzos_defn_obj))
-                                self.nbpgmCreated += 1
-                
-                #log.info(" obj_name object created is " + str(obj_name))
-                caller_object = asmzos_defn_obj
-             
-            crc = binascii.crc32(content.encode()) 
+
+            with open_source_file(filepath) as srcfile:
+                content = srcfile.read()
+                srcfile.seek(0)   
+                mylist = [line.rstrip('\n') for line in srcfile]
+
+            self.firstlineNb = 1
+            self.lastlineNb = len(mylist)
+
+            firstline = mylist[0]
+            obj_name = firstline.split("(")[1].split(")")[0]
+
+            self.start_pos = 1
+            self.last_pos = 1
+
+            asmzos_defn_obj_bookmark = Bookmark(file, 0, -1, self.lastlineNb - 1, -1)
+
+            macro_regex = re.compile(self.macro_check)
+            asm_regexes = [macro_regex]
+
+            # Decide whether to create Macro or Program object
+            asmzos_defn_obj = None
+            uncommented_line = 0
+            for line_nb, line in enumerate(mylist, start=1):
+                line = line[:72]
+                if not line.startswith('*') and line_nb > 1:
+                    uncommented_line += 1
+                    matched = [regex for regex in asm_regexes if regex.match(line)]
+                    if matched and uncommented_line == self.firstlineNb:
+                        asmzos_defn_obj = self.__create_object(self, obj_name, "ASM_MACRO",
+                                                               file, filepath, asmzos_defn_obj_bookmark)
+                        self.macros[obj_name].append(asmzos_defn_obj)
+                        self.nbpgmCreated += 1
+                    elif asmzos_defn_obj is None:
+                        asmzos_defn_obj = self.__create_object(self, obj_name, "ASMZOSProgram",
+                                                               file, filepath, asmzos_defn_obj_bookmark)
+                        self.programs.append((file, asmzos_defn_obj))
+                        self.nbpgmCreated += 1
+
+            caller_object = asmzos_defn_obj
+
+            # Save checksum
+            crc = binascii.crc32(content.encode())
             asmzos_defn_obj.save_property('checksum.CodeOnlyChecksum', crc % 2147483648)
 
             seen_end_exec = False
-            
+            line_number = 0
             self.caller_bookmark_new = None
-            with open_source_file(file.get_path()) as srcfile:
-                #log.info(" Processing file is " + str(srcfile))
-                obj = None
-    
-                for line in srcfile:
 
-                    line_number +=1
-                    if line_number > 1 and not line.startswith("END_PROGRAM") and not line.startswith("*"):
-                    #if not line.startswith("BEGIN_PROGRAM") and not line.startswith("END_PROGRAM"):
-                        processed_line = "N"
-                        for regexp in self.asm_regexes:
-                            asm_search_text = re.search(regexp,line)
-                            only_regex = regexp.pattern
-                            #log.info("asm_search_text is " + str(asm_search_text))
-                            #log.info("line is " + str(line))
-                            if asm_search_text != None: 
-                                if only_regex == self.program_call_regex:
-                                    #len_groups = len(asm_search_text.groups())
-                                    start_end_pos = asm_search_text.span()
-                                    
-                                    start_pos = start_end_pos[0]
-                                    end_pos = start_end_pos[1]
-                                    
-                                    called_program_name = ""
-                                    if len(asm_search_text.group(0).split()) > 1:
-                                        called_program_name = asm_search_text.group(0).split()[1]
-                                    else:
-                                        called_program_name = asm_search_text.group(0).split("'")[1].split("'")[0]
-                                    
-                                    if called_program_name != "":
-                                    #called_program_name = asm_search_text.group(len_groups-1).strip().split()[0]
-                                        self.caller_bookmark_new = Bookmark(file, line_number , start_pos, line_number, end_pos)
-                                        if called_program_name not in self.asm_unknown_prog_main_list.keys():
-                                            try:
-                                                obj = self.__create_object(self,called_program_name, "CallTo_program", caller_object,filepath, self.caller_bookmark_new)
-                                                self.asm_unknown_prog_main_list[called_program_name].append(obj)
-                                            except:
-                                                pass
-                                        else:
-                                            for key, val in self.asm_unknown_prog_main_list.items():
-                                                if key == called_program_name:
-                                                    link = ('callLink', caller_object, val, self.caller_bookmark_new)
-                                                    self.links.append(link)
-                    
-                        if 'END-EXEC' in line:
-                            seen_end_exec = True
-                        
-                        
-            # there are several variants for assembler program
-            # EXEC SQL without END-EXEC
-            # EXEC SQL with END-EXEC
-            if seen_end_exec:
-                variant = Variant.with_end_exec
-            else:
-                variant = Variant.without_end_exec
-            
-            # store the information on the object
-            asmzos_defn_obj.variant = variant
+            for line in mylist:
+                line_number += 1
+                line = self.first_72(line)
+
+                if line_number > 1 and not line.startswith("END_PROGRAM") and not line.startswith("*"):
+                    seg = line
+                    out = {"YGCALL": None, "COPY": None, "LOAD_EP": None, "CALL": None, "CICS_PROGRAM": None}
+
+                    opcode, operand, dbg = self.parse_fields(seg)
+                    opcode, operand = self.normalize_opcode_and_operand(opcode, operand)
+
+                    # Match opcodes
+                    if opcode == "YGCALL":
+                        m = self.YGCALL_RE.search(seg)
+                        if m: out["YGCALL"] = {"name": m.group("name"), "span": m.span("name")}
+                    elif opcode in ("COPY", "LOAD_EP", "CALL"):
+                        m = self.TOKEN_AT_START.search(operand)
+                        if m: out[opcode] = {"name": m.group("name"), "span": m.span("name")}
+                    elif opcode == "EXEC":
+                        m = self.CICS_LOAD_PROGRAM_RE.search(operand)
+                        if m: out["CICS_PROGRAM"] = {"name": m.group("name"), "span": m.span("name")}
+
+                    # Create bookmarks and links
+                    for kind, info in out.items():
+                        if info:
+                            start_pos, end_pos = info["span"]
+                            called_program_name = info["name"]
+                            self.caller_bookmark_new = Bookmark(file, line_number, start_pos, line_number, end_pos)
+
+                            if called_program_name not in self.asm_unknown_prog_main_list:
+                                try:
+                                    obj = self.__create_object(self, called_program_name, "CallTo_program",
+                                                               caller_object, filepath, self.caller_bookmark_new)
+                                    self.asm_unknown_prog_main_list.setdefault(called_program_name, []).append(obj)
+                                except Exception as e:
+                                    log.info("create_object failed: " + str(e))
+                            else:
+                                val = self.asm_unknown_prog_main_list.get(called_program_name, [])
+                                link = ('callLink', caller_object, val, self.caller_bookmark_new)
+                                self.links.append(link)
+
+                if 'END-EXEC' in line:
+                    seen_end_exec = True
+
+            # Set variant
+            asmzos_defn_obj.variant = Variant.with_end_exec if seen_end_exec else Variant.without_end_exec
                             
                             
         for link in self.links:
@@ -311,8 +379,9 @@ class ASMExtension(cast.analysers.ua.Extension):
             self.nbLinksCreated += 1
             #log.info(' Link created is ' + str(link))
             create_link(*link)          
-
+ 
     def end_analysis(self):
+
         if not self.active:
             return
         
@@ -341,7 +410,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                     line_number = 0
                     for line in content:
                         line_number += 1
-
+                        line = line[:72]
                         if line.startswith(('*', '.*')):
                             # comment
                             continue
@@ -352,7 +421,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                         tokens = splitter.split(line)
                         # search for macro call
                         if len(tokens) > 1:
-
+ 
                             begin_column = len(tokens[0])
                             macro_name = None
                             
@@ -420,7 +489,7 @@ class ASMExtension(cast.analysers.ua.Extension):
                                     inside_exec_sql = False
                             
                         elif re.match(exec_sql_regex, line):
-
+ 
                             inside_exec_sql = True
                             current_exec_sql_begin_line = line_number
                             current_exec_sql_begin_column = line.find('SQL') + 3
@@ -430,13 +499,13 @@ class ASMExtension(cast.analysers.ua.Extension):
                                 # search for end-exec in the same line
                                 if 'END-EXEC' in line:
                                     current_exec_sql_text = line[current_exec_sql_begin_column:].split('END-EXEC')[0]
-
+ 
                                     bookmark = Bookmark(file, 
                                                         current_exec_sql_begin_line, 
                                                         current_exec_sql_begin_column+1,
                                                         line_number,
                                                         current_exec_sql_begin_column+len(current_exec_sql_text))
-
+ 
                                     self.create_sql_query(program, current_exec_sql_text, bookmark)
                                     # end of exec sql
                                     current_exec_sql_text = None
@@ -472,7 +541,7 @@ class ASMExtension(cast.analysers.ua.Extension):
         log.info(" Number of Links Created " + str(self.nbLinksCreated))
         log.info(" Total ASM Program Objects Created  -- > " + str(self.nbpgmCreated))
         log.info("*****************************************************************")
-
+ 
     def create_sql_query(self, program, text, bookmark):
         
         # name of the query is restricted to 4 words
@@ -505,15 +574,15 @@ class ASMExtension(cast.analysers.ua.Extension):
                                  )
         
         create_link('callLink', program, o, link_bookmark)
-
+ 
     def create_guid(self, objectType, objectName):
         
         if not type(objectName) is str:
             return objectType + '/' + objectName.name
         else:
             return objectType + '/' + objectName
-
-
+ 
+ 
 def get_sql_query_name(sql_query_text):
     # normalization of query name
     # see 
@@ -530,5 +599,3 @@ def get_sql_query_name(sql_query_text):
         truncated_sql = " ".join(splitted[0:max_words])
         
     return truncated_sql
-
-
